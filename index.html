@@ -161,9 +161,6 @@
     </div>
 
     <script>
-        // Your Express server URL
-        const SERVER_URL = 'https://rizzapp.store';
-        
         function returnToApp() {
             const loading = document.getElementById('loading');
             const loadingText = document.getElementById('loading-text');
@@ -202,78 +199,59 @@
             }
         }
 
-        async function verifyEmailToken(token) {
-            const loading = document.getElementById('loading');
-            const loadingText = document.getElementById('loading-text');
-            
-            loading.style.display = 'block';
-            loadingText.textContent = 'Verifying email...';
-            
-            try {
-                // Call your Express server's verification endpoint
-                const response = await fetch(`${SERVER_URL}/verify-email?token=${token}`, {
-                    method: 'GET',
-                    credentials: 'include' // Include cookies for session
-                });
-                
-                if (response.ok) {
-                    showStatus('Email verified successfully!', 'success');
-                    updateUI(true);
-                    
-                    // Auto-redirect to app after successful verification
-                    setTimeout(() => {
-                        returnToApp();
-                    }, 2000);
-                } else {
-                    throw new Error('Verification failed');
-                }
-            } catch (error) {
-                console.error('Verification error:', error);
-                showStatus('Email verification failed. Please try again.', 'error');
-                updateUI(false);
-            } finally {
-                loading.style.display = 'none';
-            }
-        }
-
         function getUrlParams() {
             const urlParams = new URLSearchParams(window.location.search);
             return Object.fromEntries(urlParams.entries());
         }
 
-        // Handle different URL scenarios
+        // Handle different URL scenarios - FIXED VERSION
         window.onload = function() {
             const params = getUrlParams();
-            const currentPath = window.location.pathname;
             
-            // Check if this is a verification link
-            if (params.token || currentPath.includes('verify-email')) {
-                const token = params.token;
-                
-                if (token) {
-                    // Verify the email token
-                    verifyEmailToken(token);
-                } else {
-                    showStatus('Invalid verification link. No token provided.', 'error');
-                    updateUI(false);
-                }
-            } else if (params.verified === 'true') {
-                // Already verified, just show success
-                showStatus('Email already verified!', 'success');
+            // FIXED: Check URL parameters that the backend sets during redirect
+            if (params.verified === 'true') {
+                // User was successfully verified by the backend
+                showStatus('Email verified successfully!', 'success');
                 updateUI(true);
-                setTimeout(returnToApp, 1000);
+                
+                if (params.email) {
+                    const email = decodeURIComponent(params.email);
+                    showStatus(`Email ${email} verified successfully!`, 'success');
+                }
+                
+                // Auto-redirect to app after successful verification
+                setTimeout(() => {
+                    returnToApp();
+                }, 2000);
+                
             } else if (params.error) {
-                // Handle error cases
+                // Handle error cases from backend redirect
                 let errorMessage = 'Verification failed.';
+                
                 if (params.error === 'invalid_token') {
                     errorMessage = 'Invalid or expired verification link.';
                 } else if (params.error === 'server_error') {
                     errorMessage = 'Server error during verification.';
+                } else if (params.error === 'already_verified') {
+                    errorMessage = 'This email has already been verified.';
                 }
+                
                 showStatus(errorMessage, 'error');
                 updateUI(false);
+                
+            } else if (params.token) {
+                // REMOVED: No longer making API call here since backend handles it
+                // Just show processing message
+                showStatus('Processing verification...', 'processing');
+                
+                // The page should be redirected by backend, but if not, show error
+                setTimeout(() => {
+                    showStatus('Verification link may be invalid or expired.', 'error');
+                    updateUI(false);
+                }, 5000);
+                
             } else {
-                // Normal landing page - auto-redirect after delay
+                // Normal landing page - no verification needed
                 setTimeout(returnToApp, 1000);
             }
         };
