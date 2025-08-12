@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Return to Rizzler</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #ffffff;
+            color: #000000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .logo {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #e6255d;
+            margin-bottom: 2rem;
+            letter-spacing: -0.02em;
+        }
+
+        .message {
+            font-size: 1.5rem;
+            font-weight: 500;
+            color: #000000;
+            margin-bottom: 3rem;
+            line-height: 1.4;
+        }
+
+        .return-btn {
+            background-color: #e6255d;
+            color: #ffffff;
+            border: none;
+            padding: 16px 32px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-block;
+            box-shadow: 0 4px 16px rgba(230, 37, 93, 0.2);
+        }
+
+        .return-btn:hover {
+            background-color: #d1204f;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(230, 37, 93, 0.3);
+        }
+
+        .return-btn:active {
+            transform: translateY(0);
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            color: #666666;
+            margin-top: 2rem;
+            line-height: 1.5;
+        }
+
+        .loading {
+            display: none;
+            margin-top: 1rem;
+            color: #e6255d;
+            font-size: 0.9rem;
+        }
+
+        .spinner {
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #e6255d;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 480px) {
+            .logo {
+                font-size: 2.5rem;
+            }
+            
+            .message {
+                font-size: 1.3rem;
+            }
+            
+            .return-btn {
+                padding: 14px 28px;
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">Rizzler</div>
+        <div class="message">Return to Rizzler</div>
+        <button class="return-btn" onclick="returnToApp()">Open App</button>
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            Opening app...
+        </div>
+        <div class="subtitle">
+            Redirecting you back to the Rizzler app.<br>
+            If the app doesn't open automatically, tap the button above.
+        </div>
+    </div>
+
+    <script>
+        function returnToApp() {
+            const loading = document.getElementById('loading');
+            loading.style.display = 'block';
+            
+            // Try to open the app using the custom scheme
+            const appUrl = 'rizzler://';
+            
+            // For iOS/Android deep linking
+            window.location.href = appUrl;
+            
+            // Fallback: try to redirect after a short delay
+            setTimeout(() => {
+                // You can add a fallback URL here, like your app store page
+                // window.location.href = 'https://apps.apple.com/app/your-app-id';
+                loading.style.display = 'none';
+            }, 3000);
+        }
+
+        // Auto-redirect on page load
+        window.onload = function() {
+            // Small delay to let the page render first
+            setTimeout(returnToApp, 1000);
+        };
+
+        // Handle URL parameters if you need to pass data to the app
+        function getUrlParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return Object.fromEntries(urlParams.entries());
+        }
+
+        // You can modify this to handle specific verification tokens or other data
+        const params = getUrlParams();
+        if (params.token) {
+            // If you need to pass the token to the app, modify the appUrl
+            // appUrl = `rizzler://verify?token=${params.token}`;
+        }
+    </script>
+</body>
+</html>
