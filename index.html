@@ -95,6 +95,31 @@
             margin-right: 10px;
         }
 
+        .verification-status {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            font-weight: 500;
+        }
+
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .processing {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -119,22 +144,31 @@
 <body>
     <div class="container">
         <div class="logo">Rizzler</div>
-        <div class="message">Return to Rizzler</div>
-        <button class="return-btn" onclick="returnToApp()">Open App</button>
+        
+        <!-- Verification status will be shown here -->
+        <div id="verification-status" class="verification-status" style="display: none;"></div>
+        
+        <div class="message" id="main-message">Return to Rizzler</div>
+        <button class="return-btn" onclick="returnToApp()" id="return-button">Open App</button>
         <div class="loading" id="loading">
             <div class="spinner"></div>
-            Opening app...
+            <span id="loading-text">Opening app...</span>
         </div>
-        <div class="subtitle">
+        <div class="subtitle" id="subtitle">
             Redirecting you back to the Rizzler app.<br>
             If the app doesn't open automatically, tap the button above.
         </div>
     </div>
 
     <script>
+        // Your Express server URL
+        const SERVER_URL = 'https://rizzapp.store';
+        
         function returnToApp() {
             const loading = document.getElementById('loading');
+            const loadingText = document.getElementById('loading-text');
             loading.style.display = 'block';
+            loadingText.textContent = 'Opening app...';
             
             // Try to open the app using the custom scheme
             const appUrl = 'rizzler://';
@@ -144,30 +178,105 @@
             
             // Fallback: try to redirect after a short delay
             setTimeout(() => {
-                // You can add a fallback URL here, like your app store page
-                // window.location.href = 'https://apps.apple.com/app/your-app-id';
                 loading.style.display = 'none';
             }, 3000);
         }
 
-        // Auto-redirect on page load
-        window.onload = function() {
-            // Small delay to let the page render first
-            setTimeout(returnToApp, 1000);
-        };
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('verification-status');
+            statusDiv.textContent = message;
+            statusDiv.className = `verification-status ${type}`;
+            statusDiv.style.display = 'block';
+        }
 
-        // Handle URL parameters if you need to pass data to the app
+        function updateUI(verified, message) {
+            const mainMessage = document.getElementById('main-message');
+            const subtitle = document.getElementById('subtitle');
+            
+            if (verified) {
+                mainMessage.textContent = 'Email Verified Successfully!';
+                subtitle.innerHTML = 'Your account has been verified.<br>You can now return to the Rizzler app.';
+            } else {
+                mainMessage.textContent = 'Verification Failed';
+                subtitle.innerHTML = 'There was an issue verifying your email.<br>Please try again or contact support.';
+            }
+        }
+
+        async function verifyEmailToken(token) {
+            const loading = document.getElementById('loading');
+            const loadingText = document.getElementById('loading-text');
+            
+            loading.style.display = 'block';
+            loadingText.textContent = 'Verifying email...';
+            
+            try {
+                // Call your Express server's verification endpoint
+                const response = await fetch(`${SERVER_URL}/verify-email?token=${token}`, {
+                    method: 'GET',
+                    credentials: 'include' // Include cookies for session
+                });
+                
+                if (response.ok) {
+                    showStatus('Email verified successfully!', 'success');
+                    updateUI(true);
+                    
+                    // Auto-redirect to app after successful verification
+                    setTimeout(() => {
+                        returnToApp();
+                    }, 2000);
+                } else {
+                    throw new Error('Verification failed');
+                }
+            } catch (error) {
+                console.error('Verification error:', error);
+                showStatus('Email verification failed. Please try again.', 'error');
+                updateUI(false);
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
         function getUrlParams() {
             const urlParams = new URLSearchParams(window.location.search);
             return Object.fromEntries(urlParams.entries());
         }
 
-        // You can modify this to handle specific verification tokens or other data
-        const params = getUrlParams();
-        if (params.token) {
-            // If you need to pass the token to the app, modify the appUrl
-            // appUrl = `rizzler://verify?token=${params.token}`;
-        }
+        // Handle different URL scenarios
+        window.onload = function() {
+            const params = getUrlParams();
+            const currentPath = window.location.pathname;
+            
+            // Check if this is a verification link
+            if (params.token || currentPath.includes('verify-email')) {
+                const token = params.token;
+                
+                if (token) {
+                    // Verify the email token
+                    verifyEmailToken(token);
+                } else {
+                    showStatus('Invalid verification link. No token provided.', 'error');
+                    updateUI(false);
+                }
+            } else if (params.verified === 'true') {
+                // Already verified, just show success
+                showStatus('Email already verified!', 'success');
+                updateUI(true);
+                setTimeout(returnToApp, 1000);
+            } else if (params.error) {
+                // Handle error cases
+                let errorMessage = 'Verification failed.';
+                if (params.error === 'invalid_token') {
+                    errorMessage = 'Invalid or expired verification link.';
+                } else if (params.error === 'server_error') {
+                    errorMessage = 'Server error during verification.';
+                }
+                showStatus(errorMessage, 'error');
+                updateUI(false);
+            } else {
+                // Normal landing page - auto-redirect after delay
+                setTimeout(returnToApp, 1000);
+            }
+        };
     </script>
 </body>
 </html>
