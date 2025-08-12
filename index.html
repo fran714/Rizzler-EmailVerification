@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Return to Rizzler</title>
+    <title>Email Verified - Rizzler</title>
     <style>
         * {
             margin: 0;
@@ -35,6 +35,16 @@
             color: #e6255d;
             margin-bottom: 2rem;
             letter-spacing: -0.02em;
+        }
+
+        .verification-status {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            font-weight: 500;
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
         }
 
         .message {
@@ -95,31 +105,6 @@
             margin-right: 10px;
         }
 
-        .verification-status {
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 2rem;
-            font-weight: 500;
-        }
-
-        .success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
-        .processing {
-            background-color: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeaa7;
-        }
-
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -145,27 +130,25 @@
     <div class="container">
         <div class="logo">Rizzler</div>
         
-        <!-- Verification status will be shown here -->
-        <div id="verification-status" class="verification-status" style="display: none;"></div>
+        <!-- Static success status -->
+        <div class="verification-status">Email verified successfully!</div>
         
-        <div class="message" id="main-message">Return to Rizzler</div>
-        <button class="return-btn" onclick="returnToApp()" id="return-button">Open App</button>
+        <div class="message">Email Verified Successfully!</div>
+        <button class="return-btn" onclick="returnToApp()">Open App</button>
         <div class="loading" id="loading">
             <div class="spinner"></div>
-            <span id="loading-text">Opening app...</span>
+            <span>Opening app...</span>
         </div>
-        <div class="subtitle" id="subtitle">
-            Redirecting you back to the Rizzler app.<br>
-            If the app doesn't open automatically, tap the button above.
+        <div class="subtitle">
+            Your account has been verified.<br>
+            You can now return to the Rizzler app.
         </div>
     </div>
 
     <script>
         function returnToApp() {
             const loading = document.getElementById('loading');
-            const loadingText = document.getElementById('loading-text');
             loading.style.display = 'block';
-            loadingText.textContent = 'Opening app...';
             
             // Try to open the app using the custom scheme
             const appUrl = 'rizzler://';
@@ -173,87 +156,15 @@
             // For iOS/Android deep linking
             window.location.href = appUrl;
             
-            // Fallback: try to redirect after a short delay
+            // Hide loading after delay
             setTimeout(() => {
                 loading.style.display = 'none';
             }, 3000);
         }
 
-        function showStatus(message, type) {
-            const statusDiv = document.getElementById('verification-status');
-            statusDiv.textContent = message;
-            statusDiv.className = `verification-status ${type}`;
-            statusDiv.style.display = 'block';
-        }
-
-        function updateUI(verified, message) {
-            const mainMessage = document.getElementById('main-message');
-            const subtitle = document.getElementById('subtitle');
-            
-            if (verified) {
-                mainMessage.textContent = 'Email Verified Successfully!';
-                subtitle.innerHTML = 'Your account has been verified.<br>You can now return to the Rizzler app.';
-            } else {
-                mainMessage.textContent = 'Verification Failed';
-                subtitle.innerHTML = 'There was an issue verifying your email.<br>Please try again or contact support.';
-            }
-        }
-
-        function getUrlParams() {
-            const urlParams = new URLSearchParams(window.location.search);
-            return Object.fromEntries(urlParams.entries());
-        }
-
-        // Handle different URL scenarios - FIXED VERSION
+        // Auto-redirect to app after 2 seconds
         window.onload = function() {
-            const params = getUrlParams();
-            
-            // FIXED: Check URL parameters that the backend sets during redirect
-            if (params.verified === 'true') {
-                // User was successfully verified by the backend
-                showStatus('Email verified successfully!', 'success');
-                updateUI(true);
-                
-                if (params.email) {
-                    const email = decodeURIComponent(params.email);
-                    showStatus(`Email ${email} verified successfully!`, 'success');
-                }
-                
-                // Auto-redirect to app after successful verification
-                setTimeout(() => {
-                    returnToApp();
-                }, 2000);
-                
-            } else if (params.error) {
-                // Handle error cases from backend redirect
-                let errorMessage = 'Verification failed.';
-                
-                if (params.error === 'invalid_token') {
-                    errorMessage = 'Invalid or expired verification link.';
-                } else if (params.error === 'server_error') {
-                    errorMessage = 'Server error during verification.';
-                } else if (params.error === 'already_verified') {
-                    errorMessage = 'This email has already been verified.';
-                }
-                
-                showStatus(errorMessage, 'error');
-                updateUI(false);
-                
-            } else if (params.token) {
-                // REMOVED: No longer making API call here since backend handles it
-                // Just show processing message
-                showStatus('Processing verification...', 'processing');
-                
-                // The page should be redirected by backend, but if not, show error
-                setTimeout(() => {
-                    showStatus('Verification link may be invalid or expired.', 'error');
-                    updateUI(false);
-                }, 5000);
-                
-            } else {
-                // Normal landing page - no verification needed
-                setTimeout(returnToApp, 1000);
-            }
+            setTimeout(returnToApp, 2000);
         };
     </script>
 </body>
